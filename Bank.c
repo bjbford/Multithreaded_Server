@@ -2,6 +2,8 @@
 
 #include "Bank.h"
 #include <stdlib.h>
+// added to avoid implicit function declaration warning
+#include <unistd.h> 
 
 
 int *BANK_accounts;	//Array for storing account values

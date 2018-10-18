@@ -6,9 +6,9 @@ cd to the directory the test script was saved to
 Run command:  chmod u+x ./testscript.pl
 
 To run the script use the command:
-./testscriptF11.pl ./appserver [numThreads] [numAccounts] [seed]
+./testscript.pl ./appserver [numThreads] [numAccounts] [seed]
 For example, a test with 10 threads, 1000 accounts, and a seed of 0 would be:
-./testscriptF11.pl ./appserver 10 1000 0
+./testscript.pl ./appserver 10 1000 0
 
 If the test fails, you should receive some message "ERR: <error message>" at the end of the script output.
 The script will operate as follows:
