@@ -1,4 +1,4 @@
-#include "appserver.h"
+#include "process.h"
 
 /**
  * Main program.
@@ -9,7 +9,17 @@ int main(int argc, char **argv) {
         printf("You entered the wrong number of arguments!\n");
         return 0;
     }
-    initialize_accounts(atoi(argv[2]));
+    if(!initialize_accounts(atoi(argv[2]))) {
+        printf("Failed to initialize %s bank accounts\n", argv[2]);
+    }
+    int request_id = 0;
+    // retrieve server parameters
+    int num_workers = atoi(argv[1]);
+    int num_accounts = atoi(argv[2]);
+    // prepare output file
+    char *filename = argv[3];
+    FILE *output_file;
+    output_file = fopen(filename, "w");
 
     // Infinite loop until user requests to END (Requirement 2.3)
     while(1) {
@@ -43,13 +53,14 @@ int main(int argc, char **argv) {
         if(num_args > max_args) {
             printf("Warning: You reached the maximum allowable number of transactions: 10\n");
         }
-        int request_id = process_request(user_args, num_args);
+        int request_result = process_request(user_args, num_args, request_id, num_accounts, output_file);
         // If true, processing request
-        if(request_id > 0) {
+        if(request_result == 1) {
+            request_id += 1;
             printf("< ID %d\n", request_id);
         }
         // If returns -1, exit program
-        else if (request_id == -1){
+        else if (request_result == -1){
             printf("Exiting 'appserver' program...\n");
             break;
         }
@@ -57,36 +68,7 @@ int main(int argc, char **argv) {
             printf("Please enter a valid request.\n");
         }
     }
+    // close output file
+    fclose(output_file);
     return 0;
-}
-
-/** 
- * Process a user's request.
- * Prints warning to user if not valid, exits program if is "END",
- * otherwise executes the given request.
- * Return:
- *      -1, if end command
- *       0, if unknown
- *       otherwise, request ID
- */
-int process_request(char **args, int num_args) {
-    int request_id = 0;
-    // Check for balance check
-    if(strcmp(args[0], "CHECK") == 0) {
-        //id = do_balance_check(args, num_args);
-        request_id = 1;
-    }
-    // Check for transaction 
-    else if(strcmp(args[0], "TRANS") == 0) {
-        //id = do_transaction(args, num_args);
-        request_id = 1;
-    }
-    // Check for end
-    else if(strcmp(args[0], "END") == 0) {
-        request_id = -1;
-    }
-    else {
-        request_id = 0;
-    }
-    return request_id;
 }
