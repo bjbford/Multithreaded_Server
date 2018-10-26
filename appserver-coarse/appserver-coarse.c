@@ -42,15 +42,12 @@ int main(int argc, char **argv) {
 
     // Initialize request buffer
     RequestBuffer *request_buff = create_request_buffer();
-    // Initialize all account locks (mutexes)
-    pthread_mutex_t account_locks[num_accounts];
-    int lock_iter;
-    for(lock_iter=0;lock_iter<num_accounts;lock_iter++) {
-        pthread_mutex_init(&(account_locks[lock_iter]), NULL);
-    }
+    // Initialize all accounts with one mutex (coarse-grained locking)
+    pthread_mutex_t accounts_lock;
+    pthread_mutex_init(&accounts_lock, NULL);
     
     // Initialize thread routine argument struct
-    ThreadArgs *thread_args = create_thread_args_struct(request_buff, account_locks, num_accounts, output_file);
+    ThreadArgs *thread_args = create_thread_args_struct(request_buff, accounts_lock, num_accounts, output_file);
     // Initialize user-defined amount of worker threads
     pthread_t worker_threads[num_workers];
     int i;
