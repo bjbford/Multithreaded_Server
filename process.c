@@ -3,18 +3,19 @@
 /**
  * Worker threads processing/fulfilling requests from the request buffer.
  */
-void *process(void *thread_args) {
+void * process(void *thread_args) {
     // Get arguments back out of thread args structure
     ThreadArgs *t_args = thread_args;
     RequestBuffer *req_buf = t_args->req_buf;
     pthread_mutex_t *account_locks = t_args->account_locks;
     int num_accounts = t_args->num_accounts;
-    FILE *fp = t_args->fp;
+    char *output_file = t_args->output_file;
 
     // Infinite loop to process requests from buffer
     while(1) {
         // Check for empty buffer to avoid seg faulting
         if(req_buf->head == NULL) {
+            usleep(10000);
             continue;
         }
         // Lock request buffer
@@ -26,10 +27,10 @@ void *process(void *thread_args) {
 
         // Determine type of request, then process
         if(strcmp(req->type, "CHECK") == 0) {
-            process_balance_check(req, account_locks, num_accounts, fp);
+            process_balance_check(req, account_locks, num_accounts, output_file);
         }
         else if(strcmp(req->type, "TRANS") == 0) {
-            process_transaction(req, account_locks, num_accounts, fp);
+            process_transaction(req, account_locks, num_accounts, output_file);
         }
         else if(strcmp(req->type, "END") == 0) {
             // Add request to buffer, so that all threads know to end
@@ -49,7 +50,7 @@ void *process(void *thread_args) {
 /**
  * Process a balance check request, get time at end of request, and print to output file.
  */
-void process_balance_check(Request *request, pthread_mutex_t *account_locks, int num_accounts, FILE *fp) {
+void process_balance_check(Request *request, pthread_mutex_t *account_locks, int num_accounts, char *output_file) {
     // Initialize variable used to store request finish time
     struct timeval finish_time;
     int acct_id = request->args[0];
@@ -62,13 +63,13 @@ void process_balance_check(Request *request, pthread_mutex_t *account_locks, int
     // Request finished processing, so set finish time
     gettimeofday(&finish_time, NULL);
     // print balance to output file
-    write_balance_check(fp, request->id, balance, request->time, finish_time);
+    write_balance_check(output_file, request->id, balance, request->time, finish_time);
 }
 
 /**
  * Process a transaction request, get time at end of request, and print to output file.
  */
-void process_transaction(Request *request, pthread_mutex_t *account_locks, int num_accounts, FILE *fp) {
+void process_transaction(Request *request, pthread_mutex_t *account_locks, int num_accounts, char *output_file) {
     // Initialize variable used to store request finish time
     struct timeval finish_time;
     bool isf = false;
@@ -105,6 +106,8 @@ void process_transaction(Request *request, pthread_mutex_t *account_locks, int n
     for(i=0;i<trans_num_accts;i++) {
         if((read_account(trans_accts[i]) + trans_amounts[i]) < 0) {
             isf = true;
+            // set acct_id for account with ISF
+            acct_id = trans_accts[i];
             break;
         }
     }
@@ -125,7 +128,7 @@ void process_transaction(Request *request, pthread_mutex_t *account_locks, int n
     // Request finished processing, so set finish time
     gettimeofday(&finish_time, NULL);
     // print balance to output file
-    write_transaction(fp, request->id, acct_id, isf, request->time, finish_time);
+    write_transaction(output_file, request->id, acct_id, isf, request->time, finish_time);
 }
 
 /**
@@ -204,12 +207,12 @@ RequestBuffer *create_request_buffer() {
 /**
  * Create and allocate memory for the structure which hold arguments to be passed to the thread start routine.
  */
-ThreadArgs *create_thread_args_struct(RequestBuffer *req_buf, pthread_mutex_t *account_locks, int num_accounts, FILE *fp) {
+ThreadArgs *create_thread_args_struct(RequestBuffer *req_buf, pthread_mutex_t *account_locks, int num_accounts, char *output_file) {
     ThreadArgs *t_args = (ThreadArgs *) malloc(sizeof(ThreadArgs));
     // Set-up variables
     t_args->req_buf = req_buf;
     t_args->account_locks = account_locks;
     t_args->num_accounts = num_accounts;
-    t_args->fp = fp;
+    t_args->output_file = output_file;
     return t_args;
 }

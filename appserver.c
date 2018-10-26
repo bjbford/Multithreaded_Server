@@ -33,8 +33,12 @@ int main(int argc, char **argv) {
     int num_workers = atoi(argv[1]);
     int num_accounts = atoi(argv[2]);
     // prepare output file
-    char *filename = argv[3];
-    FILE *output_file = fopen(filename, "w");
+    char *output_file = argv[3];
+    // open file to either clear or create it, then close
+    FILE *fp = fopen(output_file, "w");
+    fclose(fp);
+    // Variable to check for end of program
+    bool end_program = false;
 
     // Initialize request buffer
     RequestBuffer *request_buff = create_request_buffer();
@@ -51,7 +55,7 @@ int main(int argc, char **argv) {
     pthread_t worker_threads[num_workers];
     int i;
     for(i=0;i<num_workers;i++) {
-        pthread_create(&worker_threads[i], NULL, process, (void *) thread_args);
+        pthread_create(&(worker_threads[i]), NULL, process, (void*)thread_args);
     }
     
     // Infinite loop until user requests to END (Requirement 2.3)
@@ -90,13 +94,6 @@ int main(int argc, char **argv) {
         // Create a new request
         request_id++;
         Request *new_req = initialize_request(request_id, user_args, num_args);
-        // Debugging to file
-        // fprintf(output_file, "RequestID: %d\nNum_args:%d\nType: %s\n", new_req->id, new_req->num_args, new_req->type);
-        // int check;
-        // for(check=0;check<new_req->num_args;check++) {
-        //     fprintf(output_file, "new_req->arg[%d]: %d\n", check, new_req->args[check]);
-        // }
-        // fprintf(output_file, "-------------------\n");
 
         // Determine the user's request:
         // Check for valid balance check
@@ -109,8 +106,8 @@ int main(int argc, char **argv) {
         }
         // Check for end
         else if((strcmp(user_args[0], "END") == 0) && (num_args == 1)) {
+            end_program = true;
             printf("< Exiting 'appserver' program...\n");
-            break;
         }
         // Invalid request
         else {
@@ -120,12 +117,19 @@ int main(int argc, char **argv) {
             // Throw away request
             free(new_req->args);
             free(new_req);
+            // Reprompt the user
+            continue;
         }
 
         // Add request to request buffer, lock mutex first
         pthread_mutex_lock(&(request_buff->lock));
         add_request(request_buff, new_req);
         pthread_mutex_unlock(&(request_buff->lock));
+
+        // Break loop when end_program request is seen
+        if(end_program) {
+            break;
+        }
     }
 
     // Wait for threads to complete
@@ -133,8 +137,6 @@ int main(int argc, char **argv) {
         pthread_join(worker_threads[i], NULL);
     }
 
-    // close output file
-    fclose(output_file);
     // Free allocated memory for request buffer and thread argument structure.
     free(request_buff);
     free(thread_args);

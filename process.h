@@ -31,7 +31,7 @@ typedef struct ThreadArgs {
     RequestBuffer *req_buf;
     pthread_mutex_t *account_locks;
     int num_accounts;
-    FILE *fp;
+    char *output_file;
 } ThreadArgs;
 
 /**
@@ -42,12 +42,12 @@ void *process(void *thread_args);
 /**
  * Process a balance check request, get time at end of request, and print to output file.
  */
-void process_balance_check(Request *request, pthread_mutex_t *account_locks, int num_accounts, FILE *fp);
+void process_balance_check(Request *request, pthread_mutex_t *account_locks, int num_accounts, char *output_file);
 
 /**
  * Process a transaction request, get time at end of request, and print to output file.
  */
-void process_transaction(Request *request, pthread_mutex_t *account_locks, int num_accounts, FILE *fp);
+void process_transaction(Request *request, pthread_mutex_t *account_locks, int num_accounts, char *output_file);
 
 /**
  * Get a request from head of request buffer and remove it for processing.
@@ -73,4 +73,4 @@ RequestBuffer *create_request_buffer();
 /**
  * Create and allocate memory for the structure which hold arguments to be passed to the thread start routine.
  */
-ThreadArgs *create_thread_args_struct(RequestBuffer *req_buf, pthread_mutex_t *account_locks, int num_accounts, FILE *fp);
+ThreadArgs *create_thread_args_struct(RequestBuffer *req_buf, pthread_mutex_t *account_locks, int num_accounts, char *output_file);
