@@ -1,6 +1,21 @@
 #include "process.h"
 
 /**
+ * Check user command for a valid transaction, under the following conditions (Requirement 2.2):
+ *      - Number of arguments are odd
+ *      - Greater than or equal to 3 arguments total
+ *      - All account ids are > 0 and <= num_accounts
+ */
+bool valid_transaction_check(char **user_args, int num_args, int num_accounts);
+
+/**
+ * Check user command for a valid balance check, under the following conditions (Requirement 2.1):
+ *      - Exactly two arguments
+ *      - Account id is > 0 and <= num_accounts
+ */
+bool valid_balance_check(char **user_args, int num_args, int num_accounts);
+
+/**
  * Main program.
  */
 int main(int argc, char **argv) {
@@ -19,8 +34,7 @@ int main(int argc, char **argv) {
     int num_accounts = atoi(argv[2]);
     // prepare output file
     char *filename = argv[3];
-    FILE *output_file;
-    output_file = fopen(filename, "w");
+    FILE *output_file = fopen(filename, "w");
 
     // Initialize request buffer
     RequestBuffer *request_buff = create_request_buffer();
@@ -30,13 +44,16 @@ int main(int argc, char **argv) {
     for(lock_iter=0;lock_iter<num_accounts;lock_iter++) {
         pthread_mutex_init(&(account_locks[lock_iter]), NULL);
     }
-
+    
+    // Initialize thread routine argument struct
+    ThreadArgs *thread_args = create_thread_args_struct(request_buff, account_locks, num_accounts, output_file);
     // Initialize user-defined amount of worker threads
+    pthread_t worker_threads[num_workers];
     int i;
     for(i=0;i<num_workers;i++) {
-        // pthread_create();
+        pthread_create(&worker_threads[i], NULL, process, (void *) thread_args);
     }
-
+    
     // Infinite loop until user requests to END (Requirement 2.3)
     while(1) {
         char *input = NULL;
@@ -83,15 +100,15 @@ int main(int argc, char **argv) {
 
         // Determine the user's request:
         // Check for valid balance check
-        if((strcmp(user_args[0], "CHECK") == 0) && (num_args == 2)) {
+        if((strcmp(user_args[0], "CHECK") == 0) && valid_balance_check(user_args, num_args, num_accounts)) {
             printf("< ID %d\n", request_id);
         }
         // Check for valid transaction 
-        else if((strcmp(user_args[0], "TRANS") == 0) && (num_args >= 3) && (num_args%2 != 0)) {
+        else if((strcmp(user_args[0], "TRANS") == 0) && valid_transaction_check(user_args, num_args, num_accounts)) {
             printf("< ID %d\n", request_id);
         }
         // Check for end
-        else if(strcmp(user_args[0], "END") == 0) {
+        else if((strcmp(user_args[0], "END") == 0) && (num_args == 1)) {
             printf("< Exiting 'appserver' program...\n");
             break;
         }
@@ -113,12 +130,64 @@ int main(int argc, char **argv) {
 
     // Wait for threads to complete
     for(i=0;i<num_workers;i++) {
-        //pthread_join();
+        pthread_join(worker_threads[i], NULL);
     }
 
     // close output file
     fclose(output_file);
+    // Free allocated memory for request buffer and thread argument structure.
     free(request_buff);
+    free(thread_args);
     exit(EXIT_SUCCESS);
     return 0;
+}
+
+
+/**
+ * Check user command for a valid transaction, under the following conditions (Requirement 2.2):
+ *      - Number of arguments are odd
+ *      - Greater than or equal to 3 arguments total
+ *      - All account ids are > 0 and <= num_accounts
+ */
+bool valid_transaction_check(char **user_args, int num_args, int num_accounts) {
+    // First check for odd number of args
+    if (num_args % 2 == 0) {
+        return false;
+    }
+    // Check for min number of arguments
+    if (num_args < 3) {
+        return false;
+    }
+    // Finally check bounds of all account numbers
+    int i;
+    int acct_id;
+    for(i=1;i<num_args;i+=2) {
+        acct_id = atoi(user_args[i]);
+        if((acct_id <= 0) || (acct_id > num_accounts)){
+            return false;
+        }
+    }
+    // Made it here, so valid transaction
+    return true;
+}
+
+/**
+ * Check user command for a valid balance check, under the following conditions (Requirement 2.1):
+ *      - Exactly two arguments
+ *      - Account id is > 0 and <= num_accounts
+ */
+bool valid_balance_check(char **user_args, int num_args, int num_accounts) {
+    if((num_args != 2)) {
+        return false;
+    }
+    // perform checks
+    bool acct_id_positive = (atoi(user_args[1]) > 0);
+    bool acct_in_bound = (atoi(user_args[1]) <= num_accounts);
+    // All checks must evaluate be true to be valid
+    if(acct_id_positive && acct_in_bound) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }

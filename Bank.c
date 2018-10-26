@@ -9,7 +9,7 @@
 int *BANK_accounts;	//Array for storing account values
 
 /*
- *  Intialize back accounts
+ *  Initialize back accounts
  *  Input:  int n - Number of bank accounts
  *  Return:  1 if succeeded, 0 if error
  */
