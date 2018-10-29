@@ -13,13 +13,14 @@ void * process(void *thread_args) {
 
     // Infinite loop to process requests from buffer
     while(1) {
+        // Lock request buffer
+        pthread_mutex_lock(&(req_buf->lock));
         // Check for empty buffer to avoid seg faulting
         if(req_buf->head == NULL) {
+            pthread_mutex_unlock(&(req_buf->lock));
             usleep(10000);
             continue;
         }
-        // Lock request buffer
-        pthread_mutex_lock(&(req_buf->lock));
         // Get request from buffer
         Request *req = get_request(req_buf);
         // Unlock request buffer
