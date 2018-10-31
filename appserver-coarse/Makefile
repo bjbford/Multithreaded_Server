@@ -3,7 +3,7 @@
 # Run './appserver-coarse' after build for program
 
 TARGET = appserver-coarse
-LIBS = -lm
+LIBS = -lm -lpthread
 CC = gcc
 CFLAGS = -g -Wall
 

@@ -3,7 +3,7 @@
 # Run './appserver' after build for program
 
 TARGET = appserver
-LIBS = -lm
+LIBS = -lm -lpthread
 CC = gcc
 CFLAGS = -g -Wall
 
