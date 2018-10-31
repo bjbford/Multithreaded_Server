@@ -17,7 +17,6 @@ void write_balance_check(char *output_file, int request_id, int balance, struct 
 void write_transaction(char *output_file, int request_id, int acct_id, bool isf, struct timeval r_time, struct timeval f_time) {
     FILE *fp = fopen(output_file, "a");
     flockfile(fp);
-    flockfile(fp);
     if(isf) {
         fprintf(fp, "%d ISF %d TIME %ld.%06d %ld.%06d\n", request_id, acct_id, r_time.tv_sec, r_time.tv_usec, f_time.tv_sec, f_time.tv_usec);
     } else {
